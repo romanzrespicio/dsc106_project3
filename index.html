@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Global Warming Depi</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+      line-height: 1.5;
+    }
+
+    #hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #0f4c81 100%);
+      color: #f8fafc;
+      padding: 44px 24px 36px;
+      text-align: center;
+    }
+    #hero h1 {
+      font-size: clamp(1.5rem, 4vw, 2.3rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 10px;
+    }
+    #hero .subtitle {
+      font-size: 1rem;
+      color: #94a3b8;
+      max-width: 640px;
+      margin: 0 auto 8px;
+    }
+    #hero .source { font-size: 0.75rem; color: #475569; }
+
+    #viz-container {
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 24px 16px 52px;
+    }
+
+    .view-tabs {
+      display: flex;
+      gap: 4px;
+      background: #e2e8f0;
+      padding: 4px;
+      border-radius: 10px;
+      width: fit-content;
+      margin: 0 auto 20px;
+    }
+    .tab-btn {
+      padding: 8px 22px;
+      border-radius: 7px;
+      border: none;
+      background: transparent;
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab-btn.active {
+      background: white;
+      color: #0f172a;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .tab-btn:hover:not(.active) { color: #374151; }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px 20px 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 4px 14px rgba(0,0,0,0.04);
+    }
+
+    .stats-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .stat-chip {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 6px 12px;
+      flex: 1;
+      min-width: 110px;
+    }
+    .stat-chip .slabel {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .stat-chip .svalue {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #1e293b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
+    }
+
+    .map-layout { display: flex; gap: 16px; align-items: flex-start; }
+    .map-main-col { flex: 1; min-width: 0; }
+    .map-side-panel { width: 248px; flex-shrink: 0; }
+
+    #heatmap-wrapper {
+      position: relative;
+      line-height: 0;
+    }
+    #heatmap { display: block; width: 100%; height: auto; border-radius: 10px; }
+    #heatmap-overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      border-radius: 10px;
+    }
+    #loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: #07111f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-size: 0.88rem;
+      letter-spacing: 0.03em;
+      border-radius: 10px;
+    }
+
+    #map-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    #play-btn {
+      background: #1d4ed8;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 7px 16px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+      min-width: 80px;
+      transition: background 0.15s;
+    }
+    #play-btn:hover { background: #1e40af; }
+    #map-year-display {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #1d4ed8;
+      letter-spacing: -0.02em;
+      min-width: 52px;
+      flex-shrink: 0;
+    }
+    #year-slider { flex: 1; cursor: pointer; accent-color: #1d4ed8; }
+    #jump-latest-btn {
+      background: transparent;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 7px;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #64748b;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    #jump-latest-btn:hover { border-color: #94a3b8; color: #374151; }
+
+    #map-legend-container { margin-top: 10px; padding: 10px 4px 2px; }
+    #map-legend-svg { display: block; width: 100%; overflow: visible; }
+
+    .side-section {
+      background: #f8fafc;
+      border: 1px solid #e8edf2;
+      border-radius: 10px;
+      padding: 12px 13px;
+      margin-bottom: 10px;
+    }
+    .side-section h4 {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #64748b;
+      margin-bottom: 9px;
+    }
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.76rem;
+      color: #475569;
+      margin-bottom: 5px;
+    }
+    .legend-row:last-of-type { margin-bottom: 0; }
+    .lswatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+    .side-note { font-size: 0.71rem; color: #94a3b8; margin-top: 7px; line-height: 1.45; }
+    .region-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 4px 0;
+      border-bottom: 1px solid #e8edf2;
+      gap: 6px;
+    }
+    .region-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .region-row .rname { font-size: 0.74rem; color: #374151; flex: 1; line-height: 1.3; }
+    .region-row .rval { font-size: 0.76rem; font-weight: 700; flex-shrink: 0; }
+    #pattern-note { font-size: 0.76rem; color: #475569; line-height: 1.5; }
+
+    #chart-controls {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .region-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 13px;
+      border-radius: 20px;
+      border: 2.5px solid transparent;
+      background: transparent;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .region-btn .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .ctrl-btn {
+      padding: 5px 13px;
+      border-radius: 7px;
+      border: 1.5px solid #e2e8f0;
+      background: white;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #475569;
+      transition: all 0.15s;
+    }
+    .ctrl-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .ctrl-btn.active { background: #1d4ed8; color: white; border-color: #1d4ed8; }
+    .spacer { flex: 1; }
+    .chart-hint { font-size: 0.72rem; color: #94a3b8; }
+    #main-chart, #context-chart { display: block; overflow: visible; }
+    .axis text { font-size: 11px; fill: #64748b; }
+    .axis line, .axis path { stroke: #e2e8f0; }
+    .y-label { font-size: 11px; fill: #94a3b8; }
+
+    #tooltip {
+      position: fixed;
+      pointer-events: none;
+      background: rgba(15, 23, 42, 0.94);
+      color: #f8fafc;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.78rem;
+      opacity: 0;
+      transition: opacity 0.1s;
+      z-index: 300;
+      line-height: 1.8;
+      min-width: 165px;
+      backdrop-filter: blur(4px);
+    }
+    #tooltip strong { font-size: 0.88rem; display: block; margin-bottom: 2px; }
+
+    @media (max-width: 720px) {
+      .map-layout { flex-direction: column; }
+      .map-side-panel { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="hero">
+  <h1>Global Temperature Anomalies Over Time</h1>
+  <p class="subtitle">How has Earth's surface temperature changed from 1850–2014, and does warming differ between hemispheres?</p>
+</div>
+
+<div id="viz-container">
+
+  <div class="view-tabs">
+    <button class="tab-btn active" data-view="map">&#127760; Map</button>
+    <button class="tab-btn" data-view="line">&#128200; Line Chart</button>
+  </div>
+
+  <div id="view-map">
+    <div class="stats-bar">
+      <div class="stat-chip">
+        <span class="slabel">Global mean anomaly</span>
+        <span class="svalue" id="stat-mean">—</span>
+      </div>
+      <div class="stat-chip">
+        <span class="slabel">Cells above baseline</span>
+        <span class="svalue" id="stat-pct">—</span>
+      </div>
+      <div class="stat-chip">
+        <span class="slabel">Highest temp. increase region</span>
+        <span class="svalue" id="stat-warmest" style="color:#dc2626">—</span>
+      </div>
+      <div class="stat-chip">
+        <span class="slabel">Highest temp. decrease region</span>
+        <span class="svalue" id="stat-coolest" style="color:#2563eb">—</span>
+      </div>
+    </div>
+
+    <div class="map-layout">
+      <div class="map-main-col">
+        <div class="card" style="padding:14px 14px 12px;">
+          <div id="heatmap-wrapper">
+            <canvas id="heatmap" width="880" height="440"></canvas>
+            <canvas id="heatmap-overlay" width="880" height="440"></canvas>
+            <div id="loading-overlay">Loading spatial data&hellip;</div>
+          </div>
+          <div id="map-controls">
+            <button id="play-btn">&#9654; Play</button>
+            <div id="map-year-display">1850</div>
+            <input type="range" id="year-slider" min="0" max="32" value="0" step="1">
+            <button id="jump-latest-btn">Jump to 2010</button>
+          </div>
+          <div id="map-legend-container">
+            <svg id="map-legend-svg" height="40"></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="map-side-panel">
+        <div class="side-section">
+          <h4>How to read this map</h4>
+          <div class="legend-row">
+            <div class="lswatch" style="background:#b2182b;"></div>Warmer than baseline
+          </div>
+          <div class="legend-row">
+            <div class="lswatch" style="background:#f5f0eb;border:1px solid #ddd;"></div>Near baseline (0&deg;C)
+          </div>
+          <div class="legend-row">
+            <div class="lswatch" style="background:#2166ac;"></div>Cooler than baseline
+          </div>
+          <div class="legend-row">
+            <div class="lswatch" style="background:#0d1f35;border:1px solid #334;"></div>Ocean (background)
+          </div>
+          <p class="side-note">Each tile is one model grid cell (~10&deg; &times; 7.5&deg;). Darker = stronger anomaly. All values relative to the 1850–1900 average.</p>
+        </div>
+        <div class="side-section">
+          <h4>This Year at a Glance</h4>
+          <div id="year-glance" style="font-size:0.76rem;color:#475569;">Select a year with the slider.</div>
+        </div>
+        <div class="side-section">
+          <h4>&#128308; Highest Temp. Increase Regions</h4>
+          <div id="notable-warm" style="font-size:0.75rem;color:#94a3b8;">—</div>
+        </div>
+        <div class="side-section">
+          <h4>&#128309; Highest Temp. Decrease Regions</h4>
+          <div id="notable-cool" style="font-size:0.75rem;color:#94a3b8;">—</div>
+        </div>
+        <div class="side-section">
+          <h4>Pattern Note</h4>
+          <p id="pattern-note">—</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-line" style="display:none;">
+    <div class="card">
+      <div id="chart-controls">
+        <button class="region-btn" id="btn-Global"><span class="dot"></span>Global</button>
+        <button class="region-btn" id="btn-NH"><span class="dot"></span>N. Hemisphere</button>
+        <button class="region-btn" id="btn-SH"><span class="dot"></span>S. Hemisphere</button>
+        <div class="spacer"></div>
+        <button class="ctrl-btn" id="smooth-btn">10-yr Smooth</button>
+        <button class="ctrl-btn" id="reset-btn">Reset Zoom</button>
+        <span class="chart-hint">Drag bottom strip to zoom &middot; Hover for values</span>
+      </div>
+      <svg id="main-chart"></svg>
+      <svg id="context-chart" style="margin-top:6px;"></svg>
+    </div>
+  </div>
+
+</div>
+
+<div id="tooltip"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script>
+'use strict';
+
+const COLORS = {
+  'Global':              '#ef4444',
+  'Northern Hemisphere': '#f97316',
+  'Southern Hemisphere': '#3b82f6'
+};
+const LABELS = {
+  'Global':              'Global',
+  'Northern Hemisphere': 'N. Hemisphere',
+  'Southern Hemisphere': 'S. Hemisphere'
+};
+const DASHES = {
+  'Global':              null,
+  'Northern Hemisphere': '8,4',
+  'Southern Hemisphere': '3,5'
+};
+const REGIONS = ['Global', 'Northern Hemisphere', 'Southern Hemisphere'];
+const ANNOTATIONS = [
+  { year: 1963, label: 'Agung' },
+  { year: 1982, label: 'El Chichón' },
+  { year: 1991, label: 'Pinatubo' },
+  { year: 1998, label: 'El Niño' }
+];
+
+const activeRegions = new Set(REGIONS);
+let smoothing       = false;
+let allRegionalData = [];
+let yearLookup      = {};
+let rawByRegion     = {};
+
+let mapYears        = [];
+let dataByMapYear   = {};
+let uniqueLats      = [];
+let uniqueLons      = [];
+let worldGeo        = null;
+
+let currentMapIdx   = 0;
+let playing         = false;
+let playTimer       = null;
+
+let cellW           = 0;
+let cellH           = 0;
+let cachedGraticule = null;
+let cachedBorders   = null;
+let cachedCoastline = null;
+let pointByLatLon   = {};
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', function () {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    const v = this.dataset.view;
+    document.getElementById('view-map').style.display  = v === 'map'  ? 'block' : 'none';
+    document.getElementById('view-line').style.display = v === 'line' ? 'block' : 'none';
+  });
+});
+
+
+function toStdLon(csvLon) { return csvLon > 180 ? csvLon - 360 : csvLon; }
+
+function getRegionName(lat, csvLon) {
+  const lon = toStdLon(csvLon);
+
+  if (lat >= 67)  return 'Arctic';
+  if (lat <= -67) return 'Antarctica / Southern Ocean';
+
+  if (lat >= 50) {
+    if (lon >= -168 && lon < -52) return 'Northern Canada / Alaska';
+    if (lon >= -52  && lon < -10) return 'North Atlantic';
+    if (lon >= -10  && lon < 50)  return 'Northern Europe';
+    if (lon >= 50   && lon < 180) return 'Siberia';
+    return 'North Pacific Ocean';
+  }
+  if (lat >= 30) {
+    if (lon >= -130 && lon < -60) return 'United States / S. Canada';
+    if (lon >= -60  && lon < -10) return 'North Atlantic Ocean';
+    if (lon >= -10  && lon < 45)  return 'Europe / Mediterranean';
+    if (lon >= 45   && lon < 90)  return 'Central Asia';
+    if (lon >= 90   && lon < 145) return 'East Asia / China';
+    return 'North Pacific Ocean';
+  }
+  if (lat >= 0) {
+    if (lon >= -120 && lon < -60) return 'Mexico / Central America';
+    if (lon >= -60  && lon < -20) return 'Tropical Atlantic';
+    if (lon >= -20  && lon < 20)  return 'North Africa / Sahara';
+    if (lon >= 20   && lon < 60)  return 'Middle East / East Africa';
+    if (lon >= 60   && lon < 100) return 'South Asia / Arabian Sea';
+    if (lon >= 100  && lon < 145) return 'Southeast Asia';
+    return 'Tropical Pacific Ocean';
+  }
+  if (lat >= -30) {
+    if (lon >= -85  && lon < -34) return 'Northern South America';
+    if (lon >= -34  && lon < 20)  return 'South Atlantic Ocean';
+    if (lon >= 20   && lon < 55)  return 'Central / Southern Africa';
+    if (lon >= 55   && lon < 110) return 'Indian Ocean';
+    if (lon >= 110  && lon < 155) return 'Maritime Southeast Asia';
+    return 'South Pacific Ocean';
+  }
+  if (lat >= -55) {
+    if (lon >= -82  && lon < -34) return 'Southern South America';
+    if (lon >= 113  && lon < 155) return 'Australia';
+    if (lon >= -34  && lon < 20)  return 'South Atlantic Ocean';
+    if (lon >= 20   && lon < 113) return 'Southern Indian Ocean';
+    return 'South Pacific Ocean';
+  }
+  return 'Southern Ocean';
+}
+
+
+function getTop3Pair(points) {
+  const sorted = [...points].sort((a, b) => b.value - a.value);
+  const seenW = new Set(), seenC = new Set();
+  const warm  = [], cool  = [];
+  for (let i = 0; i < sorted.length && warm.length < 3; i++) {
+    const p = sorted[i], n = getRegionName(p.lat, p.lon);
+    if (!seenW.has(n)) { seenW.add(n); warm.push({ ...p, regionName: n }); }
+  }
+  for (let i = sorted.length - 1; i >= 0 && cool.length < 3; i--) {
+    const p = sorted[i], n = getRegionName(p.lat, p.lon);
+    if (!seenC.has(n)) { seenC.add(n); cool.push({ ...p, regionName: n }); }
+  }
+  return { warm, cool };
+}
+
+function renderRegionRows(items, color, positive) {
+  if (!items.length) return '<span style="color:#94a3b8">No data</span>';
+  return items.map(p =>
+    `<div class="region-row">
+       <span class="rname">${p.regionName}</span>
+       <span class="rval" style="color:${color}">${positive && p.value > 0 ? '+' : ''}${p.value.toFixed(2)}°C</span>
+     </div>`
+  ).join('');
+}
+
+function generatePatternNote(points, globalMean) {
+  const arcticPts = points.filter(p => p.lat > 60);
+  if (!arcticPts.length) return `Global mean anomaly: ${globalMean > 0 ? '+' : ''}${globalMean.toFixed(2)}°C.`;
+
+  const arcticMean = d3.mean(arcticPts, p => p.value);
+  const tropicMean = d3.mean(points.filter(p => Math.abs(p.lat) < 30), p => p.value);
+
+  if (arcticMean > tropicMean + 0.5) {
+    return `Arctic amplification: polar regions (+${arcticMean.toFixed(1)}°C) are warming faster than the tropics (+${tropicMean.toFixed(1)}°C). This asymmetry intensifies over time.`;
+  }
+  if (globalMean > 1.2) {
+    return `Strong warming signal: global mean is +${globalMean.toFixed(2)}°C above the 1850–1900 baseline — nearly all grid cells are above average.`;
+  }
+  if (globalMean > 0.5) {
+    return `Moderate warming: global mean is +${globalMean.toFixed(2)}°C. Most regions show above-baseline temperatures.`;
+  }
+  if (globalMean <= 0.15) {
+    return `Near the 1850–1900 baseline: global mean is ${globalMean > 0 ? '+' : ''}${globalMean.toFixed(2)}°C — the warming trend has not yet clearly emerged.`;
+  }
+  return `Early warming signal: global mean +${globalMean.toFixed(2)}°C. Warming is beginning to emerge above the historical baseline.`;
+}
+
+function updateSidePanel(year) {
+  const points = dataByMapYear[year];
+  if (!points || !points.length) return;
+
+  const globalMean = d3.mean(points, p => p.value);
+  const pctWarm    = d3.mean(points, p => p.value > 0 ? 1 : 0) * 100;
+  const { warm, cool } = getTop3Pair(points);
+
+  document.getElementById('stat-mean').textContent     = `${globalMean > 0 ? '+' : ''}${globalMean.toFixed(2)}°C`;
+  document.getElementById('stat-pct').textContent      = `${pctWarm.toFixed(0)}% warmer`;
+  document.getElementById('stat-warmest').textContent  = warm.length ? warm[0].regionName : '—';
+  document.getElementById('stat-coolest').textContent  = cool.length ? cool[0].regionName : '—';
+
+  document.getElementById('year-glance').innerHTML =
+    `<span style="font-weight:700;font-size:0.9rem;color:#1e293b;">${year}</span>&ensp;` +
+    `Global mean: <strong style="color:${globalMean > 0 ? '#dc2626' : '#2563eb'}">${globalMean > 0 ? '+' : ''}${globalMean.toFixed(2)}°C</strong><br>` +
+    `${pctWarm.toFixed(0)}% of grid cells above the 1850–1900 baseline.`;
+
+  document.getElementById('notable-warm').innerHTML = renderRegionRows(warm, '#dc2626', true);
+  document.getElementById('notable-cool').innerHTML = renderRegionRows(cool, '#2563eb', false);
+  document.getElementById('pattern-note').textContent = generatePatternNote(points, globalMean);
+}
+
+const SVG_W  = 860;
+const M      = { top: 36, right: 20, bottom: 24, left: 58 };
+const MAIN_H = 280;
+const CTX_H  = 55;
+const IW     = SVG_W - M.left - M.right;
+const IH     = MAIN_H - M.top - M.bottom;
+const CTX_IH = CTX_H - 8 - 20;
+
+const xFull = d3.scaleLinear().domain([1850, 2014]).range([0, IW]);
+const xMain = d3.scaleLinear().domain([1850, 2014]).range([0, IW]);
+const yMain = d3.scaleLinear().domain([-0.65, 1.85]).range([IH, 0]);
+const yCtx  = d3.scaleLinear().domain([-0.65, 1.85]).range([CTX_IH, 0]);
+
+const mainSVG = d3.select('#main-chart')
+  .attr('width', SVG_W).attr('height', MAIN_H)
+  .attr('viewBox', `0 0 ${SVG_W} ${MAIN_H}`);
+const mainG = mainSVG.append('g').attr('transform', `translate(${M.left},${M.top})`);
+
+mainSVG.append('defs').append('clipPath').attr('id', 'clip-lines')
+  .append('rect').attr('width', IW).attr('height', IH + 1);
+
+const gridG  = mainG.append('g');
+const xAxisG = mainG.append('g').attr('class', 'axis x-axis').attr('transform', `translate(0,${IH})`);
+const yAxisG = mainG.append('g').attr('class', 'axis y-axis');
+const linesG = mainG.append('g').attr('clip-path', 'url(#clip-lines)');
+const annotG = mainG.append('g').attr('clip-path', 'url(#clip-lines)');
+
+mainG.append('line')
+  .attr('x1', 0).attr('x2', IW)
+  .attr('y1', yMain(0)).attr('y2', yMain(0))
+  .attr('stroke', '#94a3b8').attr('stroke-width', 1).attr('stroke-dasharray', '5,3');
+
+mainG.append('text').attr('class', 'y-label')
+  .attr('transform', 'rotate(-90)').attr('x', -IH / 2).attr('y', -46)
+  .attr('text-anchor', 'middle').text('Temperature Anomaly (°C)');
+
+const crosshairLine = mainG.append('line')
+  .attr('stroke', '#475569').attr('stroke-width', 1).attr('stroke-dasharray', '4,3')
+  .attr('y1', 0).attr('y2', IH).attr('opacity', 0).attr('pointer-events', 'none');
+const crosshairYear = mainG.append('text')
+  .attr('font-size', '11px').attr('fill', '#475569').attr('text-anchor', 'middle')
+  .attr('y', -6).attr('opacity', 0).attr('pointer-events', 'none');
+
+const overlay = mainG.append('rect')
+  .attr('width', IW).attr('height', IH).attr('fill', 'none').attr('pointer-events', 'all');
+
+const ctxSVG = d3.select('#context-chart')
+  .attr('width', SVG_W).attr('height', CTX_H)
+  .attr('viewBox', `0 0 ${SVG_W} ${CTX_H}`);
+const ctxG      = ctxSVG.append('g').attr('transform', `translate(${M.left},8)`);
+const ctxXAxisG = ctxG.append('g').attr('class', 'axis').attr('transform', `translate(0,${CTX_IH})`);
+const ctxLinesG = ctxG.append('g');
+const brushG    = ctxG.append('g').attr('class', 'brush');
+
+function rollingMean(arr, w) {
+  const half = Math.floor(w / 2);
+  return arr.map((d, i) => {
+    const slice = arr.slice(Math.max(0, i - half), Math.min(arr.length, i + half + 1));
+    return { ...d, anomaly_c: d3.mean(slice, x => x.anomaly_c) };
+  });
+}
+
+function getProcessed(region) {
+  const rows = rawByRegion[region] || [];
+  return smoothing ? rollingMean(rows, 10) : rows;
+}
+
+function drawAxes() {
+  xAxisG.call(d3.axisBottom(xMain).ticks(8).tickFormat(d3.format('d')));
+  yAxisG.call(d3.axisLeft(yMain).ticks(6)
+    .tickFormat(d => `${d > 0 ? '+' : ''}${d.toFixed(1)}°C`));
+  gridG.selectAll('line').data(yMain.ticks(6)).join('line')
+    .attr('x1', 0).attr('x2', IW)
+    .attr('y1', d => yMain(d)).attr('y2', d => yMain(d))
+    .attr('stroke', '#f1f5f9').attr('stroke-width', 1);
+  ctxXAxisG.call(d3.axisBottom(xFull).ticks(6).tickFormat(d3.format('d')));
+}
+
+function drawLines() {
+  const lineGen = d3.line()
+    .defined(d => !isNaN(d.anomaly_c))
+    .x(d => xMain(d.year)).y(d => yMain(d.anomaly_c));
+  const ctxLine = d3.line()
+    .defined(d => !isNaN(d.anomaly_c))
+    .x(d => xFull(d.year)).y(d => yCtx(d.anomaly_c));
+
+  for (const region of REGIONS) {
+    const raw  = rawByRegion[region] || [];
+    const data = smoothing ? rollingMean(raw, 10) : raw;
+    const vis  = activeRegions.has(region) ? 1 : 0;
+    const cid  = region.replace(/ /g, '-');
+
+    linesG.selectAll(`.ml-${cid}`).data([data]).join('path')
+      .attr('class', `ml-${cid}`).attr('fill', 'none')
+      .attr('stroke', COLORS[region])
+      .attr('stroke-width', region === 'Global' ? 2.5 : 2)
+      .attr('stroke-dasharray', DASHES[region] || null)
+      .attr('opacity', vis).attr('d', lineGen);
+
+    ctxLinesG.selectAll(`.ca-${cid}`).data([raw]).join('path')
+      .attr('class', `ca-${cid}`).attr('fill', COLORS[region]).attr('fill-opacity', 0.12)
+      .attr('stroke', COLORS[region]).attr('stroke-width', 1)
+      .attr('opacity', vis).attr('d', ctxLine);
+  }
+
+  annotG.selectAll('.ann').data(ANNOTATIONS).join(
+    enter => {
+      const g = enter.append('g').attr('class', 'ann');
+      g.append('line').attr('stroke', '#94a3b8').attr('stroke-width', 1)
+        .attr('stroke-dasharray', '3,3').attr('y1', 0).attr('y2', IH);
+      g.append('text').attr('text-anchor', 'middle')
+        .attr('font-size', '10px').attr('fill', '#94a3b8').attr('y', -4);
+      return g;
+    }
+  ).attr('transform', d => `translate(${xMain(d.year)},0)`)
+   .select('text').text(d => d.label);
+}
+
+const brush = d3.brushX()
+  .extent([[0, 0], [IW, CTX_IH]])
+  .on('end', ({ selection }) => {
+    xMain.domain(selection ? selection.map(xFull.invert) : xFull.domain());
+    drawAxes(); drawLines();
+  });
+brushG.call(brush);
+brushG.select('.selection')
+  .attr('fill', '#1d4ed8').attr('fill-opacity', 0.12)
+  .attr('stroke', '#1d4ed8').attr('stroke-width', 1);
+
+const tooltip = d3.select('#tooltip');
+
+overlay.on('mousemove', function (event) {
+  const [mx] = d3.pointer(event);
+  const year = Math.round(xMain.invert(mx));
+  if (year < 1850 || year > 2014) return;
+  const cx = xMain(year);
+
+  crosshairLine.attr('x1', cx).attr('x2', cx).attr('opacity', 1);
+  crosshairYear.attr('x', cx).attr('opacity', 1).text(year);
+
+  const vals = yearLookup[year];
+  if (!vals) return;
+
+  const rows = REGIONS
+    .filter(r => activeRegions.has(r))
+    .map(r => {
+      const v = vals[r];
+      return `<span style="color:${COLORS[r]}">&#9679; ${LABELS[r]}: <strong>${
+        v !== undefined ? (v > 0 ? '+' : '') + v.toFixed(3) + '°C' : '—'
+      }</strong></span>`;
+    }).join('<br>');
+
+  tooltip.style('opacity', 1)
+    .html(`<strong>${year}</strong><br>${rows}`)
+    .style('left', `${event.clientX + 18}px`)
+    .style('top', `${event.clientY - 16}px`);
+
+  if (mapYears.length) {
+    const nearest = mapYears.reduce((a, b) => Math.abs(b - year) < Math.abs(a - year) ? b : a);
+    const idx = mapYears.indexOf(nearest);
+    if (idx !== currentMapIdx) { currentMapIdx = idx; drawHeatmap(idx, false); }
+  }
+}).on('mouseleave', () => {
+  crosshairLine.attr('opacity', 0);
+  crosshairYear.attr('opacity', 0);
+  tooltip.style('opacity', 0);
+});
+
+function styleRegionBtn(id, region, on) {
+  const color = COLORS[region];
+  const btn   = document.getElementById(id);
+  btn.style.borderColor = color;
+  btn.querySelector('.dot').style.background = color;
+  btn.style.background = on ? color : 'transparent';
+  btn.style.color      = on ? 'white' : color;
+}
+[['btn-Global','Global'],['btn-NH','Northern Hemisphere'],['btn-SH','Southern Hemisphere']]
+  .forEach(([id, region]) => {
+    styleRegionBtn(id, region, true);
+    document.getElementById(id).addEventListener('click', () => {
+      const on = activeRegions.has(region);
+      if (on) activeRegions.delete(region); else activeRegions.add(region);
+      styleRegionBtn(id, region, !on);
+      drawLines();
+    });
+  });
+
+document.getElementById('smooth-btn').addEventListener('click', function () {
+  smoothing = !smoothing;
+  this.classList.toggle('active', smoothing);
+  drawLines();
+});
+document.getElementById('reset-btn').addEventListener('click', () => {
+  xMain.domain(xFull.domain());
+  brushG.call(brush.move, null);
+  drawAxes(); drawLines();
+});
+
+const canvas        = document.getElementById('heatmap');
+const overlayCanvas = document.getElementById('heatmap-overlay');
+const ctx2d         = canvas.getContext('2d');
+const overlayCtx    = overlayCanvas.getContext('2d');
+const MAP_W         = canvas.width;
+const MAP_H         = canvas.height;
+
+function latToY(lat) { return ((90 - lat) / 180) * MAP_H; }
+function lonToX(csvLon) { return ((toStdLon(csvLon) + 180) / 360) * MAP_W; }
+
+const geoProj = d3.geoEquirectangular()
+  .scale(MAP_W / (2 * Math.PI))
+  .translate([MAP_W / 2, MAP_H / 2]);
+
+const colorScale = d3.scaleDiverging(d3.interpolateRdBu).domain([3, 0, -3]);
+
+function drawHeatmap(idx, updateSlider = true) {
+  const year = mapYears[idx];
+  if (!year) return;
+
+  document.getElementById('map-year-display').textContent = year;
+  if (updateSlider) document.getElementById('year-slider').value = idx;
+
+  const points = dataByMapYear[year];
+  if (!points) return;
+
+  ctx2d.fillStyle = '#0b1a2b';
+  ctx2d.fillRect(0, 0, MAP_W, MAP_H);
+
+  const cW = Math.ceil(cellW);
+  const cH = Math.ceil(cellH);
+  for (const pt of points) {
+    ctx2d.fillStyle = colorScale(pt.value);
+    const rawX = Math.floor(lonToX(pt.lon));
+    const rawY = Math.floor(latToY(pt.lat) - cellH / 2);
+    const x0 = (rawX > 0 && rawX < cW) ? 0 : rawX;
+    const y0 = (rawY > 0 && rawY < cH) ? 0 : Math.max(0, rawY);
+    ctx2d.fillRect(x0, y0, cW + (rawX - x0), cH + (rawY - y0));
+  }
+
+
+  updateSidePanel(year);
+}
+
+canvas.addEventListener('mousemove', function (event) {
+  const rect   = canvas.getBoundingClientRect();
+  const mouseX = (event.clientX - rect.left) * (MAP_W / rect.width);
+  const mouseY = (event.clientY - rect.top)  * (MAP_H / rect.height);
+
+  const lat    = 90 - (mouseY / MAP_H) * 180;
+  const stdLon = (mouseX / MAP_W) * 360 - 180;
+
+  if (!uniqueLats.length || !uniqueLons.length) return;
+  const nearLat = uniqueLats.reduce((a, b) => Math.abs(b - lat) < Math.abs(a - lat) ? b : a);
+  const nearLon = uniqueLons.reduce((a, b) => Math.abs(toStdLon(b) - stdLon) < Math.abs(toStdLon(a) - stdLon) ? b : a);
+
+  const year = mapYears[currentMapIdx];
+  const pt   = pointByLatLon[year]?.get(`${nearLat},${nearLon}`) ?? null;
+
+  overlayCtx.clearRect(0, 0, MAP_W, MAP_H);
+  overlayCtx.strokeStyle = 'rgba(57, 255, 20, 0.95)';
+  overlayCtx.lineWidth   = 2;
+  overlayCtx.strokeRect(
+    Math.floor(lonToX(nearLon)),
+    Math.floor(latToY(nearLat) - cellH / 2),
+    Math.ceil(cellW),
+    Math.ceil(cellH)
+  );
+
+  if (pt) {
+    const lonDisplay = toStdLon(nearLon);
+    const latStr = `${Math.abs(nearLat).toFixed(1)}°${nearLat >= 0 ? 'N' : 'S'}`;
+    const lonStr = `${Math.abs(lonDisplay).toFixed(1)}°${lonDisplay >= 0 ? 'E' : 'W'}`;
+    const sign   = pt.value > 0 ? '+' : '';
+    const cat    = pt.value > 0.5  ? '<span style="color:#fca5a5">Warmer than baseline</span>'
+                 : pt.value < -0.5 ? '<span style="color:#93c5fd">Cooler than baseline</span>'
+                 : '<span style="color:#d1d5db">Near baseline</span>';
+
+    tooltip.style('opacity', 1)
+      .html(`<strong>${year}</strong><br>${latStr}&ensp;${lonStr}<br>Anomaly: <strong>${sign}${pt.value.toFixed(2)}°C</strong><br>Region: ${getRegionName(nearLat, nearLon)}<br>${cat}`)
+      .style('left', `${event.clientX + 18}px`)
+      .style('top',  `${event.clientY - 20}px`);
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  overlayCtx.clearRect(0, 0, MAP_W, MAP_H);
+  tooltip.style('opacity', 0);
+});
+
+function drawLegend() {
+  const lgSVG = d3.select('#map-legend-svg');
+  const W = 500, barX = 60, barW = W - 120, barY = 4, barH = 14;
+  lgSVG.attr('viewBox', `0 0 ${W} 40`);
+
+  const defs = lgSVG.append('defs');
+  const grad = defs.append('linearGradient').attr('id', 'lgGrad').attr('x1','0%').attr('x2','100%');
+  for (let i = 0; i <= 30; i++) {
+    grad.append('stop')
+      .attr('offset', `${i / 30 * 100}%`)
+      .attr('stop-color', colorScale(i / 30 * 6 - 3));
+  }
+
+  lgSVG.append('rect')
+    .attr('x', barX).attr('y', barY).attr('width', barW).attr('height', barH)
+    .attr('rx', 4).attr('fill', 'url(#lgGrad)');
+
+  const xLg = d3.scaleLinear().domain([-3, 3]).range([barX, barX + barW]);
+  [-3, -2, -1, 0, 1, 2, 3].forEach(t => {
+    const x = xLg(t);
+    lgSVG.append('line')
+      .attr('x1', x).attr('x2', x).attr('y1', barY + barH).attr('y2', barY + barH + 4)
+      .attr('stroke', '#64748b').attr('stroke-width', 1);
+    lgSVG.append('text')
+      .attr('x', x).attr('y', 38).attr('text-anchor', 'middle')
+      .attr('font-size', '10px').attr('fill', '#64748b')
+      .text(t === 0 ? '0°C' : `${t > 0 ? '+' : ''}${t}°C`);
+  });
+
+  lgSVG.append('text').attr('x', barX - 4).attr('y', barY + barH / 2 + 4)
+    .attr('text-anchor', 'end').attr('font-size', '10px').attr('font-weight', '600')
+    .attr('fill', '#2166ac').text('Cooler');
+  lgSVG.append('text').attr('x', barX + barW + 4).attr('y', barY + barH / 2 + 4)
+    .attr('text-anchor', 'start').attr('font-size', '10px').attr('font-weight', '600')
+    .attr('fill', '#b2182b').text('Warmer');
+}
+
+document.getElementById('year-slider').addEventListener('input', function () {
+  currentMapIdx = +this.value;
+  drawHeatmap(currentMapIdx, false);
+});
+
+document.getElementById('play-btn').addEventListener('click', function () {
+  playing = !playing;
+  this.textContent = playing ? '⏸ Pause' : '▶ Play';
+  if (playing) {
+    playTimer = setInterval(() => {
+      currentMapIdx = (currentMapIdx + 1) % mapYears.length;
+      drawHeatmap(currentMapIdx, true);
+      if (currentMapIdx === mapYears.length - 1) {
+        playing = false;
+        document.getElementById('play-btn').textContent = '▶ Play';
+        clearInterval(playTimer);
+      }
+    }, 350);
+  } else {
+    clearInterval(playTimer);
+  }
+});
+
+document.getElementById('jump-latest-btn').addEventListener('click', () => {
+  if (!mapYears.length) return;
+  currentMapIdx = mapYears.length - 1;
+  drawHeatmap(currentMapIdx, true);
+});
+
+Promise.all([
+  d3.csv('data/cmip6_temperature_eda.csv', d => ({
+    year:      +d.year,
+    region:    d.region,
+    anomaly_c: +d.anomaly_c
+  })),
+  d3.csv('data/cmip6_temperature_spatial_eda.csv', d => ({
+    year:  +d.year,
+    lat:   +d.lat,
+    lon:   +d.lon,
+    value: +d.value
+  })),
+  d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').catch(() => null)
+]).then(([regional, spatial, world]) => {
+
+  allRegionalData = regional;
+  for (const d of regional) {
+    if (!yearLookup[d.year]) yearLookup[d.year] = {};
+    yearLookup[d.year][d.region] = d.anomaly_c;
+  }
+  for (const region of REGIONS) {
+    rawByRegion[region] = regional.filter(d => d.region === region).sort((a, b) => a.year - b.year);
+  }
+  drawAxes();
+  drawLines();
+
+  uniqueLats = [...new Set(spatial.map(d => d.lat))].sort(d3.ascending);
+  uniqueLons = [...new Set(spatial.map(d => d.lon))].sort(d3.ascending);
+  mapYears   = [...new Set(spatial.map(d => d.year))].sort(d3.ascending);
+
+  const latStep = 180 / uniqueLats.length;
+  const lonStep = 360 / uniqueLons.length;
+  cellW = (lonStep / 360) * MAP_W + 1.5;
+  cellH = (latStep / 180) * MAP_H + 1.5;
+
+  const grouped = d3.group(spatial, d => d.year);
+  for (const [yr, pts] of grouped) {
+    dataByMapYear[yr] = pts;
+    const m = new Map();
+    for (const p of pts) m.set(`${p.lat},${p.lon}`, p);
+    pointByLatLon[yr] = m;
+  }
+
+  document.getElementById('year-slider').max = mapYears.length - 1;
+
+  worldGeo = world;
+  if (worldGeo) {
+    cachedGraticule = d3.geoGraticule().step([30, 30])();
+    cachedBorders   = topojson.mesh(worldGeo, worldGeo.objects.countries, (a, b) => a !== b);
+    cachedCoastline = topojson.feature(worldGeo, worldGeo.objects.land);
+  }
+
+  document.getElementById('loading-overlay').style.display = 'none';
+  drawLegend();
+  drawHeatmap(0, true);
+});
+</script>
+</body>
+</html>
