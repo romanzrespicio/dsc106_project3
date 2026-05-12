@@ -292,6 +292,7 @@
 <div id="hero">
   <h1>Global Temperature Anomalies Over Time</h1>
   <p class="subtitle">How has Earth's surface temperature changed from 1850–2014? Are there regional differences in how global warming has progressed?</p>
+  <p class="source">Data: CMIP6 annual surface temperature anomalies, baseline 1850-1900. Map grid: ~10 degrees x 7.5 degrees. Line view supports optional 10-year rolling mean.</p>
 </div>
 
 <div id="viz-container">
@@ -396,87 +397,46 @@
 
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     WRITE-UP SECTION
-     Fill in each subsection below. Do not remove the comment markers.
-     ═══════════════════════════════════════════════════════════════ -->
 <div id="writeup" style="max-width:1060px;margin:0 auto 60px;padding:0 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1e293b;">
 
   <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:24px;padding-bottom:10px;border-bottom:2px solid #e2e8f0;">Project Write-Up</h2>
 
-  <!-- TEAM MEMBERS ─────────────────────────────────────────────
-       List each team member's name and their contribution.
-  ──────────────────────────────────────────────────────────── -->
   <section style="margin-bottom:28px;">
     <h3 style="font-size:1rem;font-weight:700;margin-bottom:8px;">Team Members</h3>
     <p style="color:#475569;line-height:1.7;">
-      <!-- ADD NAMES HERE — e.g.:
-      -->
+      Romanz Respicio: visualization concept, UI layout, interaction design, and final integration/testing. Matthew Lee: data processing and integration, map rendering pipeline, and interaction wiring.
     </p>
   </section>
 
-  <!-- DESIGN RATIONALE ─────────────────────────────────────────
-       Explain WHY you chose these visual encodings.
-       Topics to cover:
-         - Why a heatmap for spatial data?
-         - Why the RdBu diverging color scale?
-         - Why a multi-line chart for regional comparison?
-         - Why the tab layout / side panel?
-  ──────────────────────────────────────────────────────────── -->
   <section style="margin-bottom:28px;">
     <h3 style="font-size:1rem;font-weight:700;margin-bottom:8px;">Design Rationale</h3>
     <p style="color:#475569;line-height:1.7;">
-      <!-- ADD DESIGN RATIONALE HERE -->
+      We designed this visualization to answer two linked questions: where warming is strongest and how warming rates differ by region over time. The map uses a gridded heatmap because spatial position is essential for seeing regional clusters, especially persistent Arctic amplification. We used a diverging RdBu scale centered at zero because anomaly is a signed measure, so the palette directly communicates warmer-versus-cooler than baseline with a meaningful neutral midpoint. The line chart uses position on a common y-axis for Global, Northern Hemisphere, and Southern Hemisphere so trend differences are directly comparable. We separated map and line views into tabs to reduce visual overload, then kept supporting context in a side panel (legend, ranked regions, pattern note) so interpretation help is present without hiding data.
     </p>
   </section>
 
-  <!-- DATA TRANSFORMATIONS ──────────────────────────────────────
-       Describe what you did to the raw data.
-       Topics to cover:
-         - CMIP6 anomaly baseline (1850–1900 reference period)
-         - Spatial grid resolution (10° × 7.5°)
-         - 10-year rolling average for the line chart
-         - Any filtering or aggregation
-  ──────────────────────────────────────────────────────────── -->
   <section style="margin-bottom:28px;">
     <h3 style="font-size:1rem;font-weight:700;margin-bottom:8px;">Data Transformations</h3>
     <p style="color:#475569;line-height:1.7;">
-      <!-- ADD DATA TRANSFORMATIONS HERE -->
+      The project uses two CMIP6-derived CSV files: one annual regional table and one annual gridded table. All values are temperature anomalies referenced to the 1850-1900 baseline, so 0 degrees C means historical baseline conditions. For the map, we keep the regular model grid (about 10 degrees longitude by 7.5 degrees latitude) and render one cell per grid coordinate. For the line chart, the raw annual values are shown by default, and the 10-year smoothing toggle computes a rolling average in the browser to emphasize long-run trend over year-to-year noise. To support interaction performance, we group spatial rows by year in memory, pre-sort regional series by year, and compute per-year summary statistics (global mean, percent above baseline, warmest/coolest regions) for the side panel and KPI chips.
     </p>
   </section>
 
-  <!-- INTERACTION DESIGN ────────────────────────────────────────
-       Describe each interactive feature and why it helps the user.
-       Topics to cover:
-         - Year slider + Play/Pause animation
-         - Hover tooltip on map cells
-         - Brush-zoom on the line chart context strip
-         - Region toggles and 10-year smoothing toggle
-         - Crosshair synced between map and line chart
-  ──────────────────────────────────────────────────────────── -->
   <section style="margin-bottom:28px;">
     <h3 style="font-size:1rem;font-weight:700;margin-bottom:8px;">Interaction Design</h3>
     <p style="color:#475569;line-height:1.7;">
-      <!-- ADD INTERACTION DESIGN HERE -->
+      Interaction follows an overview-to-detail workflow. In map view, the year slider and play/pause animation make temporal change explicit and help users see when warming accelerates or spreads. Hovering any grid cell reveals exact anomaly and coordinates as details-on-demand. In line view, the context brush supports fast zooming into a target period while keeping full-history context visible below. Region toggles let users compare all regions or isolate one trajectory, and the smoothing toggle makes it easy to switch between interannual variability and long-term trend. Hover crosshair and year labels improve precision when checking exact years across the chart.
     </p>
   </section>
 
-  <!-- DEVELOPMENT PROCESS ───────────────────────────────────────
-       Describe how the project was built.
-       Topics to cover:
-         - How you divided the work
-         - Challenges you faced and how you solved them
-         - Roughly how many hours total did development take?
-  ──────────────────────────────────────────────────────────── -->
   <section style="margin-bottom:28px;">
     <h3 style="font-size:1rem;font-weight:700;margin-bottom:8px;">Development Process</h3>
     <p style="color:#475569;line-height:1.7;">
-      <!-- ADD DEVELOPMENT PROCESS HERE -->
+      We built the project in three passes: (1) define the core analytical questions and test candidate encodings, (2) implement data loading and base charts, and (3) polish interactions and narrative support. The biggest implementation challenge was keeping multiple interactions synchronized (year state, brushing extent, toggled regions, smoothing) without introducing inconsistent UI states. We addressed this by centralizing year/region state and re-rendering dependent components from shared state changes. Another challenge was map responsiveness and animation smoothness; rendering the heatmap on canvas instead of SVG significantly improved playback performance. Total effort was about 22 person-hours including debugging, visual tuning, and write-up drafting.
     </p>
   </section>
 
 </div>
-<!-- END WRITE-UP SECTION ════════════════════════════════════════ -->
 
 <div id="tooltip"></div>
 
